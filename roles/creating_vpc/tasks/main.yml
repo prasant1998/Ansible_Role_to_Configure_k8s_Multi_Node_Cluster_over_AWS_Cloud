@@ -1,0 +1,87 @@
+---
+# tasks file for ec2-launch/
+#
+- name: "creating a new VPC"
+  ec2_vpc_net:
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      name: "{{ vpc_name }}"
+      cidr_block: "{{ Vpc_CidrBlock }}"
+      region: "{{ region }}"
+      # enabling dns support
+      dns_support: yes
+      # enabling dns hostnames
+      dns_hostnames: yes
+      tenancy: default
+      state: "{{ state }}"
+  register: vpc_net_result
+
+- name: "Creating internet gateway for vpc internet"
+  ec2_vpc_igw:
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      vpc_id: "{{ vpc_net_result.vpc.id }}"
+      region: "{{ region }}"
+      state: "{{ state }}"
+      tags:
+        Name: "{{ igw_name }}"
+  register: igw_result
+
+
+- name: "Creating subnetfor vpc"
+  ec2_vpc_subnet:
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      vpc_id: "{{ vpc_net_result.vpc.id }}"
+      region: "{{ region }}"
+      az: "{{ zone }}"      
+      state: "{{ state }}"
+      cidr: "{{ subNetCidrBlock }}"
+      # enablng public ip
+      map_public: yes
+      resource_tags:
+        Name: "{{ subnet_name }}"
+  register: subnet_result
+
+- name: "Creating a new security group to link with ec2"
+  ec2_group:
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      vpc_id: "{{ vpc_net_result.vpc.id }}"
+      region: "{{ region }}"
+      state: "{{ state }}"
+      name: "{{ security_group_name }}"
+      description: "{{ security_group_name }}"
+      tags:
+        Name: "{{ security_group_name  }}"
+      rules:
+      - proto: all
+        cidr_ip: "{{ port22CidrBlock }}"
+        rule_desc: allow all traffic
+  register: security_group_results
+
+
+- name: "Creating a Route table for the public subnet in the VPC" 
+  ec2_vpc_route_table:
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      vpc_id: "{{ vpc_net_result.vpc.id }}"
+      region: "{{ region }}"
+      state: "{{ state }}"
+      tags:
+        Name: "{{ route_table_name }}"
+      subnets: [ "{{ subnet_result.subnet.id }}" ]
+
+      # creating routes
+      routes:
+        - dest: "{{ destinationCidrBlock }}"
+          gateway_id: "{{ igw_result.gateway_id }}"
+  register: public_route_table
+
+
+
+
+- name: print out new vpc, subnet id, and security group for vpc
+
+  debug:
+      msg: "VPC: {{ vpc_name }}; Subnet id: {{ subnet_result.subnet.id }} and Security group: {{ security_group_results.group_id }} to create ec2 instances ..VPC Created "

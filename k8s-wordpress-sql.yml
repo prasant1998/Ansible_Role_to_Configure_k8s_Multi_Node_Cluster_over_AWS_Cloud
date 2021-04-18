@@ -1,0 +1,18 @@
+- hosts: ["tag_Name_k8s_Master"]
+  roles:
+  - name: "Configuring Master Node"
+    role:  "/ansible_wp2/roles/k8s_master"
+
+- hosts: ["tag_Name_k8s_Slave1" , "tag_Name_k8s_Slave2"]
+  vars_prompt:
+  - name: "master_token"
+    prompt: "Enter Token To Join To Master: "
+    private: no
+  roles:
+  - name: "Configuring Slave Node"
+    role:  "/ansible_wp2/roles/k8s_slave"
+
+- hosts: ["tag_Name_k8s_Master"] 
+  roles:
+  - name: "Launching Wordpress and Mysql"
+    role: "/ansible_wp2/roles/wordpress_myql"

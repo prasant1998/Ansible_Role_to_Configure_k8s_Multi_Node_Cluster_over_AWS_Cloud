@@ -1,0 +1,41 @@
+---
+# tasks file for wordpress_myql/
+- name: "Launching Wordpress in the pod"
+  shell: "kubectl run mywp1 --image=wordpress:5.1.1-php7.3-apache"
+  register: Wordpress
+
+- debug:
+    var: "Wordpress.stdout_lines"
+
+- name: "Launching MySql in other pod"
+  shell: "kubectl run mydb1 --image=mysql:5.7 --env=MYSQL_ROOT_PASSWORD=password     --env=MYSQL_DATABASE=mydb1  --env=MYSQL_USER=prasant  --env=MYSQL_PASSWORD=password"
+  register: MySql
+
+- debug:
+    var: "MySql.stdout_lines"
+
+- name: "Exposing wordpress"
+  shell: "kubectl expose pods mywp1  --type=NodePort   --port=80"
+  register: expose
+  ignore_errors: yes
+
+- debug: 
+    var: "expose.stdout_lines"
+
+- name: "To get the Service"
+  shell: "kubectl get svc"
+  register: svc
+
+- debug:
+    var: "svc.stdout_lines"
+
+- name: "Pausing playbook for 60 seconds"
+  pause: 
+    seconds: 60
+
+- name: "Getting database IP"
+  shell: "kubectl get pods -o wide"
+  register: Database_IP
+
+- debug:
+    var: "Database_IP.stdout_lines"

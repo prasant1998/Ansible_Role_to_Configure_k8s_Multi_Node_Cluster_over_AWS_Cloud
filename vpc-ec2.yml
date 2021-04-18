@@ -1,0 +1,8 @@
+- hosts: localhost
+  roles:
+  - name: "Creating VPC"
+    role: "/ansible_wp2/roles/creating_vpc"
+
+  - name: "Creating ec2"
+    role: "/ansible_wp2/roles/ec2_launch"
+
